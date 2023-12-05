@@ -342,3 +342,100 @@ test('triggered by scheduled pipeline', () => {
 //     })
 //   );
 // });
+
+/**
+ * Errorの評価
+ */
+class User {
+  name: string;
+  password: string;
+  constructor({ name, password }: { name: string; password: string }) {
+    // passwordが6文字未満の場合Errorをthrowする
+    if (password.length < 6)
+      throw new Error('The password length must be at least 6 characters.');
+    this.name = name;
+    this.password = password;
+  }
+}
+
+test('creates a new user a 6-character password', () => {
+  expect(new User({ name: 'hoge', password: '123456' })).toEqual({
+    name: 'hoge',
+    password: '123456',
+  });
+});
+
+test('throw Error when the length of password is less than 6', () => {
+  // 無名関数の中でエラーを起こさないとテスト自体が止まってしまう
+  expect(() => new User({ name: 'hoge', password: '12345' })).toThrow(); // Errorがthrowされたかのチェック
+  expect(() => new User({ name: 'hoge', password: '12345' })).toThrow(Error); // 型のチェック
+  expect(() => new User({ name: 'hoge', password: '12345' })).toThrow(
+    'The password length must be at least 6 characters.'
+  ); // エラーメッセージのチェック
+});
+
+/*
+ * Callback関数を利用した非同期な関数の結果の評価
+ */
+const fetchDataWidthCallback = (callback) => {
+  setTimeout(callback, 3000, 'lemon');
+};
+
+// 失敗例 非同期関数の処理の完了を検知できずに下記のエラー文が出る
+/**
+ * Jest did not exit one second after the test run has completed.
+ * 'This usually means that there are asynchronous operations that weren't stopped in your tests.
+ * Consider running Jest with `--detectOpenHandles` to troubleshoot this issue.
+ */
+// test('return lemon', () => {
+//   const callback = (message: string) => {
+//     expect(message).toBe('lemon');
+//   };
+//   fetchDataWidthCallback(callback);
+// });
+
+// 成功例
+test('return lemon', (done) => {
+  const callback = (message: string) => {
+    expect(message).toBe('lemon');
+    done(); //テストの終了を宣言;
+  };
+  fetchDataWidthCallback(callback);
+});
+
+/**
+ * Promiseを利用した非同期関数の結果の評価
+ */
+// .resolvesを利用した非同期関数の結果の評価
+const fetchDataWidthPromiseResolve = () =>
+  new Promise((resolve) => setTimeout(resolve, 1000, 'lemon'));
+
+// .resolvesを利用して成功時の値を受け取る
+test('return lemon (return)', () => {
+  return expect(fetchDataWidthPromiseResolve()).resolves.toBe('lemon');
+});
+
+// async/awaitを利用
+test('return lemon (async/await)', async () => {
+  await expect(fetchDataWidthPromiseResolve()).resolves.toBe('lemon');
+});
+
+// .rejectsを利用した非同期関数の例外処理の評価
+const fetchDataWidthPromiseReject = () =>
+  new Promise((resolve, reject) =>
+    setTimeout(reject, 1000, new Error('lemon does not exist'))
+  );
+
+// .resolvesを利用して成功時の値を受け取る
+test('failed to return lemon (return)', () => {
+  return expect(fetchDataWidthPromiseReject()).rejects.toThrow(
+    'lemon does not exist'
+  );
+});
+
+// async/awaitを利用
+test('failed to return lemon(async/await)', async () => {
+  await expect(fetchDataWidthPromiseReject()).rejects.toThrow(
+    'lemon does not exist'
+  );
+});
