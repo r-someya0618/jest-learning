@@ -35,6 +35,8 @@ describe('calculateSalesTax with Parameterized Tests', () => {
     { price: -1, expected: 0 },
   ])(
     'calculates the sales tax  for a price equal to $price',
-    ({ price, expected }) => {}
+    ({ price, expected }) => {
+      expect(calculateSalesTax(price)).toBe(expected);
+    }
   );
 });
